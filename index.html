@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIRKEL — Math Arcade: Circle Challenge</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#FFFDF8',        // Warm White
+                            orange: '#F26B38',    // Vibrant Orange
+                            orangeHover: '#D95321',
+                            yellow: '#F6C445',    // Sunshine Yellow
+                            yellowHover: '#E5B334',
+                            charcoal: '#34313A',  // Charcoal Text
+                            grayText: '#777777',  // Neutral Gray
+                            lightGray: '#E8E8E8', // Light Gray border/bg
+                            card: '#FFFFFF',
+                            slateBg: '#F8F8F8'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Fredoka', 'sans-serif'],
+                        body: ['Fredoka', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Fredoka -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN for Victory Screen -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #FFFDF8;
+            color: #34313A;
+            user-select: none;
+            font-size: 1.05rem;
+        }
+        h1, h2, h3, h4, .font-game {
+            font-family: 'Fredoka', sans-serif;
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #E8E8E8;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #F26B38;
+            border-radius: 6px;
+        }
+
+        /* Clean Arcade Cards & Soft Interactions */
+        .arcade-card {
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .arcade-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .arcade-btn {
+            transition: all 0.15s ease;
+            box-shadow: 0px 4px 0px rgba(0, 0, 0, 0.12);
+        }
+        .arcade-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.12);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-orange selection:text-white bg-brand-bg">
+
+    <!-- NAVIGATION HEADER / GAME STATUS BAR -->
+    <header id="app-header" class="hidden bg-white border-b-4 border-brand-lightGray sticky top-0 z-50 shadow-sm transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('home')">
+                <!-- SIRKEL LOGO BADGE -->
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-brand-orange flex items-center justify-center shadow-md transform -rotate-3">
+                    <svg class="w-7 h-7 text-white" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="10">
+                        <circle cx="50" cy="50" r="36" stroke="#F6C445" stroke-dasharray="12 6"/>
+                        <circle cx="50" cy="50" r="24" stroke="#FFFDF8"/>
+                        <line x1="50" y1="50" x2="72" y2="28" stroke="#FFFDF8" stroke-width="8"/>
+                        <circle cx="50" cy="50" r="5" fill="#FFFDF8"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="font-bold text-xl sm:text-2xl tracking-wide text-brand-charcoal">SIRKEL</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="navigateTo('home')" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-brand-charcoal hover:text-brand-orange transition">Beranda</button>
+                <button onclick="navigateTo('guide')" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-brand-charcoal hover:text-brand-orange transition">Petunjuk</button>
+                <button onclick="navigateTo('assessments')" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-brand-charcoal hover:text-brand-orange transition">Pilih Level</button>
+                
+                <div class="h-6 w-px bg-brand-lightGray hidden sm:block"></div>
+                
+                <!-- TOTAL POINTS DISPLAY BADGE -->
+                <div class="flex items-center space-x-1.5 bg-amber-100 px-3 py-1.5 rounded-2xl border border-amber-300 shadow-sm font-bold text-xs sm:text-sm text-brand-charcoal">
+                    <span class="text-base">⭐</span>
+                    <span id="header-total-points">0 PTS</span>
+                </div>
+
+                <!-- PLAYER PROFILE POPUP TRIGGER BUTTON -->
+                <div class="relative">
+                    <button onclick="toggleProfilePopup(event)" class="flex items-center space-x-2 text-xs bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-2xl border-2 border-brand-orange font-bold text-brand-charcoal transition">
+                        <div class="w-6 h-6 rounded-full bg-brand-orange text-white flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <span id="nav-user-name" class="font-bold text-brand-charcoal max-w-[100px] truncate">Pemain</span>
+                    </button>
+
+                    <!-- POPUP PROFIL PEMAIN -->
+                    <div id="profile-popup" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-3xl p-5 border-4 border-brand-lightGray shadow-xl z-50 space-y-3 text-brand-charcoal">
+                        <div class="flex items-center justify-between border-b-2 border-brand-lightGray pb-2">
+                            <h4 class="font-extrabold text-sm text-brand-orange">PROFIL PEMAIN</h4>
+                            <button onclick="toggleProfilePopup(event)" class="text-brand-grayText hover:text-brand-charcoal text-xs font-bold px-1">✕</button>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div>
+                                <span class="block text-brand-grayText font-medium text-[11px]">Nama Lengkap:</span>
+                                <span id="popup-user-name" class="font-bold text-brand-charcoal text-sm">Aulia Zahra Tazskia</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="block text-brand-grayText font-medium text-[11px]">Kelas:</span>
+                                    <span id="popup-user-class" class="font-bold text-brand-charcoal">XI MIPA 4</span>
+                                </div>
+                                <div>
+                                    <span class="block text-brand-grayText font-medium text-[11px]">Total Poin:</span>
+                                    <span id="popup-user-points" class="font-extrabold text-brand-orange">0 PTS</span>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="block text-brand-grayText font-medium text-[11px]">Asal Sekolah:</span>
+                                <span id="popup-user-school" class="font-bold text-brand-charcoal">SMAN 3 Garut</span>
+                            </div>
+                            <div class="pt-2 border-t border-brand-lightGray">
+                                <span class="block text-brand-grayText font-medium text-[11px] mb-1">Progres Penyelesaian Level:</span>
+                                <div class="flex items-center justify-between font-bold text-xs">
+                                    <span id="popup-user-progress" class="text-brand-charcoal">0 / 6 Level Selesai</span>
+                                    <span id="popup-user-pct" class="text-brand-orange font-extrabold">0%</span>
+                                </div>
+                                <div class="w-full bg-brand-lightGray h-2.5 rounded-full mt-1.5 overflow-hidden">
+                                    <div id="popup-user-progress-bar" class="bg-brand-orange h-full rounded-full transition-all" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER AREA -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- 1. PAGE IDENTITAS PESERTA DIDIK -->
+        <section id="page-identity" class="page-view max-w-2xl mx-auto my-4 sm:my-6 space-y-6">
+            <div class="bg-white rounded-3xl shadow-xl border-4 border-brand-lightGray overflow-hidden relative">
+                <!-- Static Geometric Ornaments -->
+                <div class="absolute -right-10 -top-10 w-36 h-36 rounded-full border-8 border-brand-yellow/30 pointer-events-none"></div>
+                <div class="absolute -left-10 -bottom-10 w-36 h-36 rounded-full border-8 border-brand-orange/20 pointer-events-none"></div>
+
+                <div class="p-6 sm:p-8 text-center relative z-10">
+                    <div class="w-20 h-20 bg-brand-orange rounded-3xl mx-auto flex items-center justify-center mb-3 shadow-md transform -rotate-3 border-4 border-white">
+                        <svg class="w-12 h-12 text-white" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8">
+                            <circle cx="50" cy="50" r="38" stroke="#F6C445" stroke-dasharray="10 6"/>
+                            <circle cx="50" cy="50" r="22" stroke="#FFFDF8" stroke-width="6"/>
+                            <line x1="50" y1="50" x2="72" y2="28" stroke="#FFFDF8" stroke-width="8"/>
+                            <circle cx="50" cy="50" r="6" fill="#FFFDF8"/>
+                        </svg>
+                    </div>
+
+                    <h1 class="text-3xl sm:text-4xl font-bold text-brand-charcoal">Selamat Datang di SIRKEL</h1>
+                    <p class="text-sm sm:text-base font-medium text-brand-charcoal mt-1">Siap menguji kemampuanmu tentang lingkaran?</p>
+                    
+                    <p class="text-xs text-brand-grayText mt-2 mb-5 font-normal leading-relaxed">Yuk, isi identitasmu dulu, lalu bersiap menyelesaikan berbagai tantangan seru seputar lingkaran!</p>
+
+                    <form id="identity-form" onsubmit="handleIdentitySubmit(event)" class="space-y-4 text-left max-w-md mx-auto">
+                        <div>
+                            <label for="input-fullname" class="block text-xs font-bold text-brand-charcoal uppercase tracking-wider mb-1">NAMA LENGKAP <span class="text-brand-orange">*</span></label>
+                            <input type="text" id="input-fullname" class="w-full px-4 py-3 rounded-2xl border-2 border-brand-lightGray focus:border-brand-orange outline-none transition text-sm font-normal text-brand-charcoal" placeholder="Contoh: Aulia Zahra Tazskia" required>
+                        </div>
+
+                        <div>
+                            <label for="input-class" class="block text-xs font-bold text-brand-charcoal uppercase tracking-wider mb-1">KELAS <span class="text-brand-orange">*</span></label>
+                            <input type="text" id="input-class" class="w-full px-4 py-3 rounded-2xl border-2 border-brand-lightGray focus:border-brand-orange outline-none transition text-sm font-normal text-brand-charcoal" placeholder="Contoh: XI MIPA 4" required>
+                        </div>
+
+                        <div>
+                            <label for="input-school" class="block text-xs font-bold text-brand-charcoal uppercase tracking-wider mb-1">ASAL SEKOLAH <span class="text-brand-orange">*</span></label>
+                            <input type="text" id="input-school" class="w-full px-4 py-3 rounded-2xl border-2 border-brand-lightGray focus:border-brand-orange outline-none transition text-sm font-normal text-brand-charcoal" placeholder="Contoh: SMAN 3 Garut" required>
+                        </div>
+
+                        <div id="identity-error" class="hidden text-xs font-bold text-red-600 bg-red-50 border-2 border-red-200 rounded-xl p-3 text-center">
+                            Mohon lengkapi seluruh kolom identitas pemain (Nama, Kelas, & Asal Sekolah) terlebih dahulu!
+                        </div>
+
+                        <button type="submit" class="w-full bg-brand-orange hover:bg-brand-orangeHover text-white font-bold text-base py-3.5 px-6 rounded-2xl shadow-md transition flex items-center justify-center arcade-btn">
+                            <span>MULAI BERMAIN</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. PAGE BERANDA — GAME LOBBY -->
+        <section id="page-home" class="page-view hidden space-y-8">
+            <!-- GAME LOBBY BANNER -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border-4 border-brand-lightGray shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+                <!-- Static Ornaments -->
+                <div class="absolute -right-12 -bottom-12 w-48 h-48 rounded-full border-8 border-brand-yellow/20 pointer-events-none"></div>
+
+                <div class="space-y-3 max-w-2xl relative z-10">
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-brand-charcoal leading-tight">
+                        Halo, <span id="home-user-name" class="text-brand-orange">Pemain</span>! 👋
+                    </h1>
+                    <p class="text-brand-grayText text-sm leading-relaxed font-normal">
+                        Enam level sudah menantimu! Selesaikan setiap level untuk membuka level berikutnya. Setelah itu, uji kemampuanmu melalui Evaluasi Akhir!
+                    </p>
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button onclick="navigateTo('assessments')" class="bg-brand-orange hover:bg-brand-orangeHover text-white px-7 py-3 rounded-2xl font-bold text-sm shadow-md transition arcade-btn">
+                            <span>MULAI</span>
+                        </button>
+                        <button onclick="navigateTo('guide')" class="bg-brand-slateBg hover:bg-slate-200 text-brand-charcoal border-2 border-brand-lightGray px-5 py-3 rounded-2xl font-bold text-xs transition flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>PETUNJUK PERMAINAN</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GAME DASHBOARD PROGRESS PANEL -->
+                <div class="w-full md:w-80 bg-brand-slateBg rounded-3xl p-6 border-2 border-brand-lightGray flex flex-col justify-between space-y-4 relative z-10">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-brand-charcoal uppercase tracking-wider">PROGRES LEVEL</span>
+                            <span class="text-xs font-bold text-brand-orange bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200">6 Level</span>
+                        </div>
+                        <div class="mt-3 flex items-baseline justify-between">
+                            <span id="home-progress-count" class="text-3xl font-extrabold text-brand-charcoal">0 / 6</span>
+                            <span class="text-xs font-normal text-brand-grayText">Selesai</span>
+                        </div>
+                        <div class="w-full bg-brand-lightGray h-3.5 rounded-full mt-3 overflow-hidden p-0.5 border border-slate-300">
+                            <div id="home-progress-bar" class="bg-gradient-to-r from-brand-orange to-brand-yellow h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-brand-lightGray text-xs text-brand-grayText space-y-1.5 font-normal">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-brand-charcoal">Status Evaluasi Akhir:</span>
+                            <span id="home-eval-status" class="font-bold text-brand-orange">🔒 Belum Terbuka</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACHIEVEMENT BADGES GRID DISPLAY -->
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border-4 border-brand-lightGray shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-brand-lightGray pb-3">
+                    <h3 class="font-bold text-base text-brand-charcoal flex items-center space-x-2">
+                        <span>🏆 LENCANA PENCAPAIAN</span>
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="home-badges-container">
+                    <!-- Dynamic Badges Inserted via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. PAGE PETUNJUK PERMAINAN -->
+        <section id="page-guide" class="page-view hidden max-w-4xl mx-auto space-y-6">
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border-4 border-brand-lightGray shadow-sm">
+                <div class="border-b border-brand-lightGray pb-4 mb-6 flex items-center space-x-4">
+                    <div class="w-11 h-11 rounded-2xl bg-brand-orange text-white flex items-center justify-center font-bold text-xl shadow-sm transform -rotate-3">🎮</div>
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-brand-charcoal">Petunjuk Permainan</h2>
+                        <p class="text-xs text-brand-grayText font-normal">Panduan menyelesaikan tantangan permainan lingkaran</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-start space-x-4 p-4 rounded-2xl bg-brand-slateBg border-2 border-brand-lightGray">
+                        <div class="w-8 h-8 rounded-xl bg-brand-orange text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">1</div>
+                        <div>
+                            <h4 class="font-bold text-sm text-brand-charcoal">Mulai dari Level Pertama!</h4>
+                            <p class="text-xs text-brand-grayText mt-0.5 font-normal">Awali permainan dari materi Konsep Dasar Lingkaran, lalu lanjutkan ke materi berikutnya.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 rounded-2xl bg-brand-slateBg border-2 border-brand-lightGray">
+                        <div class="w-8 h-8 rounded-xl bg-brand-orange text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">2</div>
+                        <div>
+                            <h4 class="font-bold text-sm text-brand-charcoal">Kerjakan dan Kumpulkan Poin!</h4>
+                            <p class="text-xs text-brand-grayText mt-0.5 font-normal">Setiap level berisi 2 soal. Jawab dengan tepat untuk mendapatkan poin sebanyak-banyaknya!</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 rounded-2xl bg-brand-slateBg border-2 border-brand-lightGray">
+                        <div class="w-8 h-8 rounded-xl bg-brand-yellow text-brand-charcoal flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">3</div>
+                        <div>
+                            <h4 class="font-bold text-sm text-brand-charcoal">Buka Level Berikutnya!</h4>
+                            <p class="text-xs text-brand-grayText mt-0.5 font-normal">Selesaikan setiap level secara berurutan. Setelah keenam level selesai, Evaluasi Akhir akan terbuka.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 rounded-2xl bg-brand-slateBg border-2 border-brand-lightGray">
+                        <div class="w-8 h-8 rounded-xl bg-brand-orange text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">4</div>
+                        <div>
+                            <h4 class="font-bold text-sm text-brand-charcoal">Cek Jawaban dan Pembahasan!</h4>
+                            <p class="text-xs text-brand-grayText mt-0.5 font-normal">Setelah mengirim jawaban, lihat hasilnya dan pelajari pembahasannya agar semakin memahami materi.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button onclick="navigateTo('assessments')" class="bg-brand-orange hover:bg-brand-orangeHover text-white px-7 py-3 rounded-2xl font-bold text-sm shadow-md transition arcade-btn">
+                        PILIH LEVEL
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. PAGE LEVEL SELECTION -->
+        <section id="page-assessments" class="page-view hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border-4 border-brand-lightGray shadow-sm">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-brand-charcoal flex items-center space-x-2">
+                        <span>🎯 Pilih Level</span>
+                    </h2>
+                    <p class="text-xs sm:text-sm text-brand-grayText font-semibold">Selesaikan setiap level secara berurutan untuk membuka Evaluasi Akhir!</p>
+                </div>
+                <div class="flex items-center space-x-2 bg-brand-slateBg px-4 py-2.5 rounded-2xl border-2 border-brand-lightGray text-xs font-bold text-brand-charcoal">
+                    <span>Progres: <strong id="assessment-progress-text" class="text-brand-orange">0/6 Selesai</strong></span>
+                </div>
+            </div>
+
+            <!-- ARCADE LEVEL CARDS GRID -->
+            <div id="assessment-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic Level Cards JS -->
+            </div>
+        </section>
+
+        <!-- 5. PAGE QUIZ CONTAINER -->
+        <section id="page-quiz" class="page-view hidden max-w-3xl mx-auto space-y-6">
+            <!-- GAME QUIZ HEADER BAR -->
+            <div class="bg-white p-5 rounded-3xl border-4 border-brand-lightGray shadow-sm flex items-center justify-between">
+                <div>
+                    <span id="quiz-module-tag" class="text-xs font-bold text-brand-orange uppercase tracking-wider block">LEVEL 01</span>
+                    <h3 id="quiz-module-title" class="text-base sm:text-lg font-bold text-brand-charcoal">Konsep Dasar Lingkaran</h3>
+                </div>
+                <div class="text-right flex items-center space-x-3">
+                    <span id="quiz-points-indicator" class="text-xs font-semibold bg-amber-100 text-brand-charcoal px-3 py-1.5 rounded-xl border border-amber-300">⭐ +50 PTS</span>
+                    <span id="quiz-question-counter" class="text-xs sm:text-sm font-semibold bg-orange-50 text-brand-orange px-3 py-1.5 rounded-xl border border-orange-200">Soal 1 / 2</span>
+                </div>
+            </div>
+
+            <!-- QUESTION CARD -->
+            <div class="bg-white rounded-3xl border-4 border-brand-lightGray shadow-md overflow-hidden">
+                <div class="p-6 sm:p-8 space-y-6">
+                    <div id="quiz-question-text" class="text-brand-charcoal text-sm sm:text-base leading-relaxed font-normal">
+                        <!-- Dynamic Question HTML -->
+                    </div>
+
+                    <div id="quiz-diagram-container" class="hidden flex justify-center items-center p-4 bg-brand-slateBg border-2 border-brand-lightGray rounded-2xl">
+                        <!-- Dynamic SVG Diagram -->
+                    </div>
+
+                    <div id="quiz-mcq-options" class="space-y-3 pt-2">
+                        <!-- Dynamic Option Buttons -->
+                    </div>
+
+                    <div id="quiz-essay-container" class="hidden space-y-4 pt-2">
+                        <!-- Dynamic Input Fields -->
+                    </div>
+                </div>
+
+                <!-- SUBMIT / FOOTER BAR -->
+                <div class="bg-brand-slateBg px-6 py-4 border-t-2 border-brand-lightGray flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <button id="quiz-back-btn" onclick="navigateTo('assessments')" class="text-xs font-semibold text-brand-grayText hover:text-brand-charcoal transition">
+                        Kembali ke Pilih Level
+                    </button>
+                    
+                    <button id="quiz-submit-btn" onclick="submitCurrentQuestion()" class="w-full sm:w-auto bg-brand-orange hover:bg-brand-orangeHover text-white px-7 py-3 rounded-2xl font-bold text-sm shadow-md transition arcade-btn">
+                        KIRIM JAWABAN
+                    </button>
+                </div>
+            </div>
+
+            <!-- FEEDBACK AND EXPLANATION PANEL -->
+            <div id="quiz-feedback-panel" class="hidden bg-white rounded-3xl border-4 border-brand-lightGray shadow-lg p-6 sm:p-8 space-y-4 transition-all">
+                <div id="feedback-header" class="flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold">
+                    <!-- Dynamic Feedback Status Header -->
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-brand-grayText mb-2">PEMBAHASAN MATEMATIS:</h4>
+                    <div id="feedback-explanation" class="text-brand-charcoal text-sm leading-relaxed space-y-2 bg-brand-slateBg p-4 rounded-2xl border-2 border-brand-lightGray font-normal">
+                        <!-- Dynamic Explanation Text -->
+                    </div>
+                </div>
+                <div class="pt-2 flex justify-end">
+                    <button id="feedback-next-btn" onclick="nextQuestionOrFinish()" class="bg-brand-orange hover:bg-brand-orangeHover text-white px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow transition arcade-btn">
+                        SOAL BERIKUTNYA
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. LEVEL SUMMARY / CLEAR MODAL PAGE -->
+        <section id="page-level-clear" class="page-view hidden max-w-lg mx-auto my-8">
+            <div class="bg-white rounded-3xl p-8 border-4 border-brand-orange text-center shadow-2xl space-y-6 relative overflow-hidden">
+                <div class="w-20 h-20 bg-brand-yellow text-4xl flex items-center justify-center rounded-3xl mx-auto shadow-lg border-4 border-white transform -rotate-6">
+                    🎉
+                </div>
+                <div class="space-y-1">
+                    <span id="level-clear-subtitle" class="text-xs font-black uppercase tracking-wider text-brand-orange">LEVEL 01 SELESAI!</span>
+                    <h2 id="level-clear-title" class="text-2xl sm:text-3xl font-bold text-brand-charcoal">Konsep Dasar Lingkaran</h2>
+                </div>
+
+                <div class="bg-amber-50 p-5 rounded-2xl border-2 border-amber-300 space-y-3">
+                    <div class="flex justify-between items-center text-xs font-bold text-brand-charcoal border-b border-amber-200 pb-2">
+                        <span>Status Level:</span>
+                        <span class="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">SELESAI ✅</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-center text-xs font-bold">
+                        <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                            <span class="block text-brand-grayText text-[11px]">Jawaban Benar</span>
+                            <span id="level-clear-correct-count" class="text-lg text-emerald-700">2 / 2</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                            <span class="block text-brand-grayText text-[11px]">Jawaban Salah</span>
+                            <span id="level-clear-wrong-count" class="text-lg text-rose-600">0 / 2</span>
+                        </div>
+                    </div>
+                    <div class="pt-1 flex justify-between items-center text-sm font-bold">
+                        <span>Total Skor diperoleh:</span>
+                        <span id="level-clear-score" class="text-2xl font-black text-brand-orange">100 / 100</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex flex-col space-y-3">
+                    <button id="level-clear-next-btn" onclick="nextLevelOrSelect()" class="w-full bg-brand-orange hover:bg-brand-orangeHover text-white py-3.5 rounded-2xl font-bold text-sm shadow transition arcade-btn">
+                        LANJUT KE LEVEL BERIKUTNYA
+                    </button>
+                    <button onclick="navigateTo('assessments')" class="w-full bg-slate-100 hover:bg-slate-200 text-brand-charcoal border-2 border-brand-lightGray py-3 rounded-2xl font-bold text-xs transition">
+                        KEMBALI KE PILIH LEVEL
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. PAGE HASIL AKHIR — VICTORY SCREEN -->
+        <section id="page-results" class="page-view hidden max-w-4xl mx-auto space-y-8">
+            <!-- VICTORY HEADER CARD -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 text-brand-charcoal shadow-xl border-4 border-brand-lightGray relative overflow-hidden">
+                <div class="absolute -right-12 -top-12 w-48 h-48 rounded-full border-8 border-brand-yellow/30 pointer-events-none"></div>
+
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                    <div class="space-y-2 text-center md:text-left">
+                        <span class="inline-block bg-brand-orange px-3.5 py-1 rounded-full text-xs font-black text-white uppercase tracking-wider">HASIL PERMAINAN 🏆</span>
+                        <h2 class="text-3xl sm:text-4xl font-bold" id="result-student-name">Nama Peserta Didik</h2>
+                        <p class="text-brand-grayText font-bold text-xs sm:text-sm" id="result-student-meta">Kelas XI • SMAN 3 Garut</p>
+                    </div>
+
+                    <div class="flex items-center space-x-4 bg-brand-slateBg p-4 rounded-2xl border-2 border-brand-lightGray">
+                        <div class="text-center px-3">
+                            <span class="block text-xs text-brand-grayText font-bold uppercase">Rata-Rata 6 Level</span>
+                            <span id="result-avg-stage-score" class="text-3xl font-bold text-brand-orange">0</span>
+                            <span class="text-xs text-brand-grayText font-bold">/ 100</span>
+                        </div>
+                        <div class="h-10 w-0.5 bg-brand-lightGray"></div>
+                        <div class="text-center px-3">
+                            <span class="block text-xs text-brand-grayText font-bold uppercase">Evaluasi Akhir</span>
+                            <span id="result-eval-score" class="text-3xl font-bold text-brand-orange">0</span>
+                            <span class="text-xs text-brand-grayText font-bold">/ 100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UNLOCKED BADGES BANNER IN RESULTS -->
+            <div class="bg-white p-6 rounded-3xl border-4 border-brand-lightGray shadow-sm space-y-3">
+                <h3 class="font-bold text-base text-brand-charcoal">Lencana Pencapaian Terbuka:</h3>
+                <div id="results-unlocked-badges" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <!-- Dynamic badges in results -->
+                </div>
+            </div>
+
+            <!-- MOTIVATIONAL FEEDBACK BANNER -->
+            <div id="result-feedback-banner" class="bg-white p-6 rounded-3xl border-4 border-brand-lightGray shadow-sm flex items-start space-x-4">
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-brand-charcoal flex items-center justify-center shrink-0 font-bold text-2xl border border-amber-300">
+                    🎯
+                </div>
+                <div>
+                    <h3 class="font-bold text-brand-charcoal text-base" id="result-feedback-title">Catatan & Evaluasi Pembelajaran</h3>
+                    <p class="text-brand-grayText text-xs sm:text-sm mt-1 leading-relaxed font-semibold" id="result-feedback-body">
+                        Umpan balik deskriptif akan ditampilkan di sini berdasarkan capaian kompetensi peserta didik.
+                    </p>
+                </div>
+            </div>
+
+            <!-- DETAILED BREAKDOWN PER MODULE -->
+            <div class="bg-white rounded-3xl border-4 border-brand-lightGray shadow-sm p-6 sm:p-8 space-y-6">
+                <h3 class="text-lg font-bold text-brand-charcoal border-b-2 border-brand-lightGray pb-3">Rincian Perolehan Skor & Pembahasan Setiap Level (Level 01 - 06)</h3>
+
+                <div class="space-y-6" id="result-module-breakdown">
+                    <!-- Dynamic Breakdown Cards & Level Explanations -->
+                </div>
+            </div>
+
+            <!-- FINAL EVALUATION REVIEW SECTION -->
+            <div class="bg-white rounded-3xl border-4 border-brand-lightGray shadow-sm p-6 sm:p-8 space-y-6">
+                <h3 class="text-lg font-bold text-brand-charcoal border-b-2 border-brand-lightGray pb-3">Pembahasan Evaluasi Akhir</h3>
+
+                <div id="result-eval-review-list" class="space-y-6">
+                    <!-- Dynamic Evaluation Items Review -->
+                </div>
+            </div>
+
+            <!-- NAVIGATION BUTTONS -->
+            <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+                <button onclick="navigateTo('home')" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-7 py-3.5 rounded-2xl text-sm shadow-md transition arcade-btn">
+                    KEMBALI KE BERANDA
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- GLOBAL FOOTER -->
+    <footer class="py-6">
+    </footer>
+
+    <!-- APPLICATION LOGIC SCRIPT -->
+    <script>
+        /* ==========================================================================
+           DATA STRUCTURES & QUESTION BANK (UPDATED: SUDUT PUSAT & SUDUT KELILING)
+           ========================================================================== */
+        
+        const MODULES_DATA = [
+            {
+                id: 1,
+                levelTag: "LEVEL 01",
+                title: "Konsep Sudut Pusat",
+                desc: "Pengertian dan karakteristik sudut pusat lingkaran.",
+                questions: [
+                    {
+                        id: "m1_q1",
+                        text: "Sebuah lingkaran memiliki titik pusat O. Titik A dan B terletak pada keliling lingkaran. Sudut AOB dibentuk oleh dua ruas garis OA dan OB.<br><br>Berdasarkan informasi tersebut, alasan yang tepat mengapa ∠AOB disebut sudut pusat adalah ....",
+                        options: [
+                            "Karena titik sudutnya terletak pada keliling lingkaran dan kedua sisinya merupakan tali busur",
+                            "Karena titik sudutnya berada di pusat lingkaran dan kedua sisinya merupakan jari-jari",
+                            "Karena titik sudutnya berada di luar lingkaran dan kedua sisinya memotong lingkaran",
+                            "Karena kedua sisinya merupakan diameter lingkaran"
+                        ],
+                        correctIndex: 1, // B
+                        explanation: "Sudut pusat merupakan sudut yang titik sudutnya terletak tepat di pusat lingkaran. Kedua sisi sudut pusat berupa ruas garis yang menghubungkan titik pusat dengan dua titik pada keliling lingkaran.<br><br>Pada soal, titik O merupakan pusat lingkaran, sedangkan OA dan OB merupakan jari-jari yang menghubungkan pusat dengan titik A dan B pada keliling lingkaran.<br><br>Dengan demikian, ∠AOB memenuhi karakteristik sudut pusat karena titik sudutnya berada di pusat lingkaran dan kedua sisinya merupakan jari-jari.<br><br>Jadi, jawaban yang benar adalah <b>B</b>."
+                    },
+                    {
+                        id: "m1_q2",
+                        text: "Pada sebuah lingkaran berpusat O, terdapat titik A, B, dan C pada keliling lingkaran serta titik P yang berada di bagian dalam lingkaran, tetapi bukan merupakan pusatnya.<br><br>Dari beberapa sudut berikut, sudut yang merupakan sudut pusat adalah ....",
+                        options: [
+                            "∠AOB",
+                            "∠ACB",
+                            "∠APB",
+                            "∠ABC"
+                        ],
+                        correctIndex: 0, // A
+                        explanation: "Sudut pusat memiliki titik sudut yang tepat berada di pusat lingkaran, yaitu O.<br><br>• <b>∠AOB</b> memiliki titik sudut O, yaitu pusat lingkaran. Dengan demikian, sudut tersebut merupakan sudut pusat.<br>• <b>∠ACB</b> memiliki titik sudut C yang berada pada keliling lingkaran sehingga termasuk sudut keliling.<br>• <b>∠APB</b> memiliki titik sudut P yang berada di dalam lingkaran, tetapi bukan pusat lingkaran.<br>• <b>∠ABC</b> memiliki titik sudut B yang berada pada keliling lingkaran sehingga termasuk sudut keliling.<br><br>Jadi, sudut yang merupakan sudut pusat adalah <b>∠AOB (Jawaban: A)</b>."
+                    }
+                ]
+            },
+            {
+                id: 2,
+                levelTag: "LEVEL 02",
+                title: "Hubungan Sudut Pusat dengan Busur Lingkaran",
+                desc: "Keterkaitan besar sudut pusat dengan busur kecil yang dihadapinya.",
+                questions: [
+                    {
+                        id: "m2_q1",
+                        text: "Sebuah lingkaran berpusat di O memiliki busur kecil AB dengan besar 86°. Besar sudut pusat AOB yang menghadap busur AB tersebut adalah ....",
+                        options: [
+                            "43°",
+                            "86°",
+                            "172°",
+                            "274°"
+                        ],
+                        correctIndex: 1, // B
+                        explanation: "<b>Langkah Pembahasan:</b><br>Dalam sebuah lingkaran, besar sudut pusat sama dengan besar busur kecil yang dihadapinya.<br><br>Diketahui besar busur AB = 86°.<br>Maka:<br>∠AOB = besar busur AB<br>∠AOB = 86°.<br><br><b>Kesimpulan:</b> Besar sudut pusat AOB adalah <b>86° (Jawaban: B)</b>."
+                    },
+                    {
+                        id: "m2_q2",
+                        text: "Dalam suatu lingkaran berpusat O, diketahui besar sudut pusat AOB adalah (4x + 8)° dan besar busur kecil AB adalah (6x − 28)°.<br><br>Berdasarkan hubungan antara sudut pusat dan busur yang dihadapinya, nilai x dan besar sudut AOB secara berurutan adalah ....",
+                        options: [
+                            "16 dan 72°",
+                            "18 dan 80°",
+                            "20 dan 88°",
+                            "22 dan 96°"
+                        ],
+                        correctIndex: 1, // B
+                        explanation: "<b>Langkah Pembahasan:</b><br>Diketahui:<br>∠AOB = (4x + 8)°<br>Busur AB = (6x − 28)°<br><br>Karena besar sudut pusat sama dengan besar busur yang dihadapinya, maka:<br>4x + 8 = 6x − 28<br>6x − 4x = 8 + 28<br>2x = 36  =>  x = 18.<br><br>Selanjutnya, tentukan besar sudut pusat:<br>∠AOB = 4x + 8<br>∠AOB = 4(18) + 8<br>∠AOB = 72 + 8 = 80°.<br><br><b>Kesimpulan:</b> Nilai x adalah 18 dan besar sudut AOB adalah <b>80° (Jawaban: B)</b>."
+                    }
+                ]
+            },
+            {
+                id: 3,
+                levelTag: "LEVEL 03",
+                title: "Penerapan Sudut Pusat",
+                desc: "Pemecahan masalah matematika menggunakan sifat-sifat sudut pusat.",
+                questions: [
+                    {
+                        id: "m3_q1",
+                        text: "Sebuah lingkaran dibagi menjadi empat juring yang dibentuk oleh empat sudut pusat. Besar keempat sudut pusat tersebut secara berurutan adalah 90°, 110°, 3x°, dan x°.<br><br>Besar sudut pusat yang dinyatakan dengan 3x adalah ....",
+                        options: [
+                            "80°",
+                            "100°",
+                            "120°",
+                            "140°"
+                        ],
+                        correctIndex: 2, // C
+                        explanation: "<b>Langkah Pembahasan:</b><br>Jumlah seluruh sudut pusat yang mengelilingi satu titik adalah 360°.<br><br>90° + 110° + 3x° + x° = 360°<br>200° + 4x° = 360°<br>4x° = 160°  =>  x = 40°.<br><br>Sudut yang ditanyakan adalah 3x, sehingga:<br>3x = 3(40°)<br>3x = 120°.<br><br><b>Kesimpulan:</b> Besar sudut pusat tersebut adalah <b>120° (Jawaban: C)</b>."
+                    },
+                    {
+                        id: "m3_q2",
+                        text: "Pada sebuah lingkaran berpusat O, titik B terletak di antara dua jari-jari OA dan OC sehingga membentuk sudut pusat AOC.<br><br>Diketahui:<br>∠AOB = (2x + 10)°<br>∠BOC = (3x + 20)°<br>∠AOC = 150°<br><br>Besar sudut BOC adalah ....",
+                        options: [
+                            "82°",
+                            "88°",
+                            "92°",
+                            "98°"
+                        ],
+                        correctIndex: 2, // C
+                        explanation: "<b>Langkah Pembahasan:</b><br>Karena OB berada di antara OA dan OC, sudut AOC merupakan gabungan sudut AOB dan BOC.<br><br>∠AOB + ∠BOC = ∠AOC<br>(2x + 10) + (3x + 20) = 150<br>5x + 30 = 150<br>5x = 120  =>  x = 24.<br><br>Selanjutnya, hitung besar sudut BOC:<br>∠BOC = 3x + 20<br>∠BOC = 3(24) + 20<br>∠BOC = 72 + 20 = 92°.<br><br><b>Kesimpulan:</b> Besar sudut BOC adalah <b>92° (Jawaban: C)</b>."
+                    }
+                ]
+            },
+            {
+                id: 4,
+                levelTag: "LEVEL 04",
+                title: "Konsep Sudut Keliling",
+                desc: "Definisi, letak titik sudut, dan sifat-sifat sudut keliling.",
+                questions: [
+                    {
+                        id: "m4_q1",
+                        text: "Sebuah lingkaran memiliki titik A, B, dan C yang terletak pada keliling lingkaran. Sudut ACB terbentuk dari ruas garis CA dan CB.<br><br>Sudut ACB disebut sudut keliling karena ....",
+                        options: [
+                            "Titik sudutnya berada di pusat lingkaran dan kedua sisinya merupakan jari-jari",
+                            "Titik sudutnya berada di dalam lingkaran dan kedua sisinya merupakan diameter",
+                            "Titik sudutnya berada pada keliling lingkaran dan kedua sisinya merupakan tali busur",
+                            "Titik sudutnya berada di luar lingkaran dan kedua sisinya merupakan garis singgung"
+                        ],
+                        correctIndex: 2, // C
+                        explanation: "Sudut keliling merupakan sudut yang titik sudutnya terletak pada keliling lingkaran dan kedua sisinya merupakan tali busur.<br><br>Pada ∠ACB:<br>• Titik C berada pada keliling lingkaran.<br>• Ruas garis CA merupakan tali busur.<br>• Ruas garis CB juga merupakan tali busur.<br><br>Oleh karena itu, ∠ACB memenuhi karakteristik sudut keliling <b>(Jawaban: C)</b>."
+                    },
+                    {
+                        id: "m4_q2",
+                        text: "Pada sebuah lingkaran, titik C dan D terletak pada busur besar AB. Kedua sudut ∠ACB dan ∠ADB menghadap busur kecil AB yang sama.<br><br>Pernyataan yang tepat mengenai kedua sudut tersebut adalah ....",
+                        options: [
+                            "∠ACB lebih besar daripada ∠ADB",
+                            "∠ACB lebih kecil daripada ∠ADB",
+                            "∠ACB sama dengan ∠ADB",
+                            "Jumlah ∠ACB dan ∠ADB selalu 180°"
+                        ],
+                        correctIndex: 2, // C
+                        explanation: "<b>Langkah Pembahasan:</b><br>Sudut keliling yang menghadap busur yang sama memiliki besar sudut yang sama.<br><br>Pada soal, ∠ACB dan ∠ADB sama-sama menghadap busur kecil AB.<br>Maka:<br>∠ACB = ∠ADB.<br><br><b>Kesimpulan:</b> Kedua sudut tersebut memiliki besar yang sama <b>(Jawaban: C)</b>."
+                    }
+                ]
+            },
+            {
+                id: 5,
+                levelTag: "LEVEL 05",
+                title: "Hubungan Sudut Keliling dengan Busur Lingkaran",
+                desc: "Perhitungan besar sudut keliling berdasarkan besar busur lingkaran.",
+                questions: [
+                    {
+                        id: "m5_q1",
+                        text: "Sebuah lingkaran memiliki busur AB dengan besar 132°. Titik C terletak pada busur besar AB sehingga sudut keliling ACB menghadap busur kecil AB.<br><br>Besar sudut keliling ACB adalah ....",
+                        options: [
+                            "33°",
+                            "50°",
+                            "66°",
+                            "132°"
+                        ],
+                        correctIndex: 2, // C
+                        explanation: "<b>Langkah Pembahasan:</b><br>Besar sudut keliling yang menghadap suatu busur adalah setengah dari besar busur tersebut.<br><br>Diketahui:<br>Besar busur AB = 132°.<br><br>Maka:<br>∠ACB = ½ × besar busur AB<br>∠ACB = ½ × 132°<br>∠ACB = 66°.<br><br><b>Kesimpulan:</b> Besar sudut keliling ACB adalah <b>66° (Jawaban: C)</b>."
+                    },
+                    {
+                        id: "m5_q2",
+                        text: "Sebuah lingkaran memiliki busur AB dengan besar (8x − 8)°. Sudut keliling ADB yang menghadap busur AB tersebut memiliki besar (3x + 6)°.<br><br>Nilai x dan besar sudut keliling ADB secara berurutan adalah ....",
+                        options: [
+                            "8 dan 30°",
+                            "10 dan 36°",
+                            "12 dan 42°",
+                            "14 dan 48°"
+                        ],
+                        correctIndex: 1, // B
+                        explanation: "<b>Langkah Pembahasan:</b><br>Diketahui:<br>Besar busur AB = (8x − 8)°<br>∠ADB = (3x + 6)°<br><br>Hubungan sudut keliling dengan busur yang dihadapinya:<br>Sudut keliling = ½ × besar busur.<br><br>Maka:<br>3x + 6 = ½(8x − 8)<br>3x + 6 = 4x − 4<br>4x − 3x = 6 + 4  =>  x = 10.<br><br>Selanjutnya, hitung sudut keliling:<br>∠ADB = 3x + 6 = 3(10) + 6 = 36°.<br><br>Pemeriksaan besar busur:<br>8(10) − 8 = 72°. Setengah dari 72° adalah 36° (Sesuai).<br><br><b>Kesimpulan:</b> Nilai x adalah 10 dan besar sudut keliling ADB adalah <b>36° (Jawaban: B)</b>."
+                    }
+                ]
+            },
+            {
+                id: 6,
+                levelTag: "LEVEL 06",
+                title: "Hubungan Sudut Pusat dan Sudut Keliling",
+                desc: "Analisis dan hubungan kuantitatif sudut pusat dengan sudut keliling.",
+                questions: [
+                    {
+                        id: "m6_q1",
+                        text: "Sudut pusat AOB dan sudut keliling ACB menghadap busur AB yang sama.<br><br>Diketahui:<br>∠AOB = (5x + 10)°<br>∠ACB = (2x + 20)°<br><br>Nilai x dan besar sudut keliling ACB secara berurutan adalah ....",
+                        options: [
+                            "20 dan 60°",
+                            "25 dan 70°",
+                            "30 dan 80°",
+                            "35 dan 90°"
+                        ],
+                        correctIndex: 2, // C
+                        explanation: "<b>Langkah Pembahasan:</b><br>Sudut pusat yang menghadap busur yang sama besarnya dua kali sudut keliling.<br><br>∠AOB = 2 × ∠ACB<br>5x + 10 = 2(2x + 20)<br>5x + 10 = 4x + 40<br>5x − 4x = 40 − 10  =>  x = 30.<br><br>Selanjutnya:<br>∠ACB = 2x + 20 = 2(30) + 20 = 80°.<br><br>Pemeriksaan:<br>∠AOB = 5(30) + 10 = 160°. Terbukti 160° = 2 × 80°.<br><br><b>Kesimpulan:</b> Nilai x adalah 30 dan besar sudut keliling ACB adalah <b>80° (Jawaban: C)</b>."
+                    },
+                    {
+                        id: "m6_q2",
+                        text: "Pada sebuah lingkaran, terdapat dua sudut keliling ∠ACB dan ∠ADB yang menghadap busur AB yang sama.<br><br>Diketahui:<br>∠ACB = (2x + 8)°<br>∠ADB = (3x − 12)°<br><br>Berdasarkan hubungan kedua sudut keliling tersebut, besar sudut pusat AOB yang menghadap busur AB adalah ....",
+                        options: [
+                            "84°",
+                            "90°",
+                            "96°",
+                            "108°"
+                        ],
+                        correctIndex: 2, // C
+                        explanation: "<b>Langkah Pembahasan:</b><br>Sudut keliling yang menghadap busur yang sama memiliki besar yang sama.<br><br>∠ACB = ∠ADB<br>2x + 8 = 3x − 12<br>3x − 2x = 8 + 12  =>  x = 20.<br><br>Hitung besar sudut keliling ACB:<br>∠ACB = 2(20) + 8 = 48°.<br><br>Sudut pusat yang menghadap busur yang sama besarnya dua kali sudut keliling.<br>∠AOB = 2 × 48° = 96°.<br><br><b>Kesimpulan:</b> Besar sudut pusat AOB adalah <b>96° (Jawaban: C)</b>."
+                    }
+                ]
+            }
+        ];
+
+        const FINAL_EVALUATION_DATA = {
+            title: "EVALUASI AKHIR — Penerapan Materi Sudut Pusat dan Sudut Keliling",
+            questions: [
+                {
+                    id: "eval_q1",
+                    type: "mcq",
+                    points: 30,
+                    text: "<b>SOAL 1 — PENERAPAN HUBUNGAN SUDUT PUSAT DAN SUDUT KELILING</b><br>Pada sebuah lingkaran berpusat O, sudut pusat AOB dan sudut keliling ACB menghadap busur AB yang sama.<br><br>Diketahui:<br>∠AOB = (4x + 16)°<br>∠ACB = (3x − 2)°.<br><br>Nilai x dan besar sudut keliling ACB secara berurutan adalah ....",
+                    options: [
+                        "8 dan 22°",
+                        "9 dan 25°",
+                        "10 dan 28°",
+                        "12 dan 34°"
+                    ],
+                    correctIndex: 2, // C
+                    explanation: "<b>Langkah Pembahasan:</b><br>Karena sudut pusat dan sudut keliling menghadap busur yang sama, berlaku:<br>Sudut pusat = 2 × sudut keliling.<br><br>4x + 16 = 2(3x − 2)<br>4x + 16 = 6x − 4<br>6x − 4x = 16 + 4<br>2x = 20  =>  x = 10.<br><br>Selanjutnya, hitung besar sudut keliling:<br>∠ACB = 3x − 2 = 3(10) − 2 = 28°.<br><br>Periksa sudut pusat:<br>∠AOB = 4(10) + 16 = 56°. Terbukti bahwa 56° = 2 × 28°.<br><br><b>Kesimpulan:</b> Nilai x adalah 10 dan besar sudut keliling ACB adalah <b>28° (Jawaban: C)</b>."
+                },
+                {
+                    id: "eval_q2",
+                    type: "mcq",
+                    points: 30,
+                    text: "<b>SOAL 2 — ANALISIS SUDUT KELILING PADA BUSUR KECIL DAN BUSUR BESAR</b><br>Sebuah lingkaran berpusat O memiliki sudut pusat kecil AOB sebesar 124°. Titik C terletak pada busur besar AB, sedangkan titik D terletak pada busur kecil AB.<br>Sudut keliling ACB dan ADB masing-masing menghadap busur AB yang tidak memuat titik sudutnya.<br><br>Berdasarkan informasi tersebut, selisih besar sudut ADB dan ACB adalah ....",
+                    options: [
+                        "46°",
+                        "56°",
+                        "66°",
+                        "76°"
+                    ],
+                    correctIndex: 1, // B
+                    explanation: "<b>Langkah Pembahasan:</b><br>Diketahui sudut pusat kecil AOB = 124°.<br><br><b>Langkah 1.</b> Menentukan besar busur kecil AB.<br>Besar sudut pusat sama dengan besar busur kecil yang dihadapinya = 124°.<br><br><b>Langkah 2.</b> Menentukan besar busur besar AB.<br>Busur besar AB = 360° − 124° = 236°.<br><br><b>Langkah 3.</b> Menentukan sudut keliling ACB.<br>Titik C terletak pada busur besar AB, sehingga sudut ACB menghadap busur kecil AB.<br>∠ACB = ½ × 124° = 62°.<br><br><b>Langkah 4.</b> Menentukan sudut keliling ADB.<br>Titik D terletak pada busur kecil AB, sehingga sudut ADB menghadap busur besar AB.<br>∠ADB = ½ × 236° = 118°.<br><br><b>Langkah 5.</b> Menghitung selisih kedua sudut.<br>Selisih = ∠ADB − ∠ACB = 118° − 62° = 56°.<br><br><b>Kesimpulan:</b> Selisih besar sudut ADB dan ACB adalah <b>56° (Jawaban: B)</b>."
+                },
+                {
+                    id: "eval_q3",
+                    type: "mcq",
+                    points: 40,
+                    text: "<b>SOAL 3 — PEMECAHAN MASALAH TERPADU</b><br>Pada sebuah lingkaran berpusat O, terdapat tiga jari-jari OA, OB, dan OC. Jari-jari OB terletak di antara OA dan OC sehingga membentuk sudut pusat AOC.<br><br>Diketahui:<br>∠AOB = (2x + 20)°<br>∠BOC = (3x − 10)°<br>∠AOC = 160°<br><br>Titik D terletak pada busur besar AC. Besar sudut keliling ADC adalah ....",
+                    options: [
+                        "60°",
+                        "70°",
+                        "80°",
+                        "90°"
+                    ],
+                    correctIndex: 2, // C
+                    explanation: "<b>Langkah Pembahasan:</b><br>Karena OB terletak di antara OA dan OC, sudut AOC merupakan gabungan sudut AOB dan BOC.<br><br>∠AOB + ∠BOC = ∠AOC<br>(2x + 20) + (3x − 10) = 160<br>5x + 10 = 160<br>5x = 150  =>  x = 30.<br><br><b>Langkah 2.</b> Menentukan besar sudut AOB dan BOC.<br>∠AOB = 2(30) + 20 = 80°.<br>∠BOC = 3(30) − 10 = 80°.<br>Pemeriksaan: 80° + 80° = 160° (Sesuai).<br><br><b>Langkah 3.</b> Menentukan sudut keliling ADC.<br>Titik D berada pada busur besar AC, sehingga sudut keliling ADC menghadap busur kecil AC.<br>∠ADC = ½ × ∠AOC = ½ × 160° = 80°.<br><br><b>Kesimpulan:</b> Besar sudut keliling ADC adalah <b>80° (Jawaban: C)</b>."
+                }
+            ]
+        };
+
+        const GAME_BADGES = [
+            { id: "b1", title: "Langkah Pertama", desc: "Selesaikan Level Pertama", icon: "🌱" },
+            { id: "b2", title: "Penjelajah Geometri", desc: "Selesaikan 3 Level", icon: "🧭" },
+            { id: "b3", title: "Ahli Lingkaran", desc: "Selesaikan Semua Level & Evaluasi", icon: "👑" },
+            { id: "b4", title: "Nilai Sempurna", desc: "Dapatkan Skor 100 pada Evaluasi Akhir", icon: "💯" }
+        ];
+
+        /* ==========================================================================
+           STATE MANAGEMENT & SCORING LOGIC
+           ========================================================================== */
+        let state = {
+            user: {
+                name: "",
+                class: "",
+                school: ""
+            },
+            isRegistered: false,
+            stageScores: [null, null, null, null, null, null],
+            stageAnswers: [[], [], [], [], [], []],
+            currentQuizType: null,
+            currentModuleIndex: null,
+            currentQuestionIndex: 0,
+            userAnswers: [],
+            evalScore: null,
+            evalDetails: [],
+            isAssessmentLocked: false
+        };
+
+        function initStorage() {
+            const saved = localStorage.getItem('sirkel_game_state');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.user && parsed.user.name && parsed.user.class && parsed.user.school) {
+                        state.user = parsed.user;
+                        state.isRegistered = true;
+                    }
+                    state.stageScores = parsed.stageScores || [null, null, null, null, null, null];
+                    state.stageAnswers = parsed.stageAnswers || [[], [], [], [], [], []];
+                    state.evalScore = parsed.evalScore !== undefined ? parsed.evalScore : null;
+                    state.evalDetails = parsed.evalDetails || [];
+                    state.isAssessmentLocked = parsed.isAssessmentLocked || (state.evalScore !== null && state.stageScores.every(s => s !== null));
+                    
+                    // Restore mid-quiz progress if interrupted
+                    if (parsed.activeQuiz && !state.isAssessmentLocked) {
+                        state.currentQuizType = parsed.activeQuiz.type;
+                        state.currentModuleIndex = parsed.activeQuiz.moduleIndex;
+                        state.currentQuestionIndex = parsed.activeQuiz.questionIndex || 0;
+                        state.userAnswers = parsed.activeQuiz.userAnswers || [];
+                    }
+                } catch(e) {
+                    console.error("Error reading localStorage", e);
+                }
+            }
+        }
+
+        function saveStorage() {
+            const activeQuiz = (state.currentQuizType && !state.isAssessmentLocked) ? {
+                type: state.currentQuizType,
+                moduleIndex: state.currentModuleIndex,
+                questionIndex: state.currentQuestionIndex,
+                userAnswers: state.userAnswers
+            } : null;
+
+            localStorage.setItem('sirkel_game_state', JSON.stringify({
+                user: state.user,
+                isRegistered: state.isRegistered,
+                stageScores: state.stageScores,
+                stageAnswers: state.stageAnswers,
+                evalScore: state.evalScore,
+                evalDetails: state.evalDetails,
+                isAssessmentLocked: state.isAssessmentLocked,
+                activeQuiz: activeQuiz
+            }));
+            updateTotalPointsHeader();
+        }
+
+        function calculateTotalPoints() {
+            let total = 0;
+            state.stageScores.forEach(s => {
+                if (s !== null) total += s;
+            });
+            if (state.evalScore !== null) total += state.evalScore;
+            return total;
+        }
+
+        function updateTotalPointsHeader() {
+            const pts = calculateTotalPoints();
+            document.getElementById('header-total-points').innerText = `${pts} PTS`;
+        }
+
+        /* ==========================================================================
+           ROUTING & NAVIGATION
+           ========================================================================== */
+        function navigateTo(pageId) {
+            if ((!state.isRegistered || !state.user || !state.user.name || !state.user.class || !state.user.school) && pageId !== 'identity') {
+                pageId = 'identity';
+            }
+
+            // Prevent navigating back to identity form once registered
+            if (state.isRegistered && pageId === 'identity') {
+                pageId = 'home';
+            }
+
+            // Clear active mid-quiz state if user intentionally navigates away to menu/home
+            if (pageId === 'home' || pageId === 'assessments' || pageId === 'guide' || pageId === 'results') {
+                state.currentQuizType = null;
+                state.currentModuleIndex = null;
+                state.currentQuestionIndex = 0;
+                state.userAnswers = [];
+                saveStorage();
+            }
+
+            document.querySelectorAll('.page-view').forEach(p => p.classList.add('hidden'));
+
+            const header = document.getElementById('app-header');
+            if (pageId === 'identity') {
+                header.classList.add('hidden');
+            } else {
+                header.classList.remove('hidden');
+                document.getElementById('nav-user-name').innerText = state.user.name || 'Pemain';
+                updateTotalPointsHeader();
+            }
+
+            const target = document.getElementById(`page-${pageId}`);
+            if (target) {
+                target.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            if (pageId === 'home') renderHomePage();
+            if (pageId === 'assessments') renderAssessmentsPage();
+            if (pageId === 'results') renderResultsPage();
+        }
+
+        /* ==========================================================================
+           IDENTITY FORM CONTROLLER
+           ========================================================================== */
+        function handleIdentitySubmit(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const name = document.getElementById('input-fullname').value.trim();
+            const className = document.getElementById('input-class').value.trim();
+            const school = document.getElementById('input-school').value.trim();
+            const errBox = document.getElementById('identity-error');
+
+            if (!name || !className || !school) {
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            errBox.classList.add('hidden');
+            state.user = { name, class: className, school };
+            state.isRegistered = true;
+            saveStorage();
+            navigateTo('home');
+        }
+
+        /* ==========================================================================
+           HOME PAGE
+           ========================================================================== */
+        function renderHomePage() {
+            const homeUserNameEl = document.getElementById('home-user-name');
+            if (homeUserNameEl) homeUserNameEl.innerText = state.user.name;
+
+            const completedCount = state.stageScores.filter(s => s !== null).length;
+            const progressCountEl = document.getElementById('home-progress-count');
+            if (progressCountEl) progressCountEl.innerText = `${completedCount} / 6`;
+            
+            const pct = Math.round((completedCount / 6) * 100);
+            const progressBarEl = document.getElementById('home-progress-bar');
+            if (progressBarEl) progressBarEl.style.width = `${pct}%`;
+
+            const evalStatusEl = document.getElementById('home-eval-status');
+            if (evalStatusEl) {
+                if (state.isAssessmentLocked || state.evalScore !== null) {
+                    evalStatusEl.innerText = `✅ SELESAI (${state.evalScore})`;
+                    evalStatusEl.className = "font-extrabold text-emerald-600";
+                } else if (completedCount === 6) {
+                    evalStatusEl.innerText = "🔓 Terbuka";
+                    evalStatusEl.className = "font-extrabold text-emerald-600";
+                } else {
+                    evalStatusEl.innerText = "🔒 Belum Terbuka";
+                    evalStatusEl.className = "font-extrabold text-brand-orange";
+                }
+            }
+
+            renderBadgesDisplay('home-badges-container');
+        }
+
+        function renderBadgesDisplay(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+
+            const completedCount = state.stageScores.filter(s => s !== null).length;
+            const isFirstStep = completedCount >= 1;
+            const isExplorer = completedCount >= 3;
+            const isMaster = completedCount === 6 && state.evalScore !== null;
+            const isPerfect = state.evalScore === 100;
+
+            const unlockMap = [isFirstStep, isExplorer, isMaster, isPerfect];
+
+            GAME_BADGES.forEach((b, idx) => {
+                const unlocked = unlockMap[idx];
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-2xl border-2 text-center flex flex-col items-center justify-between transition ${
+                    unlocked 
+                    ? 'bg-amber-50 border-amber-300 shadow-sm' 
+                    : 'bg-slate-100 border-slate-200 opacity-60'
+                }`;
+
+                card.innerHTML = `
+                    <div class="text-3xl mb-1">${b.icon}</div>
+                    <div class="font-bold text-xs text-brand-charcoal">${b.title}</div>
+                    <div class="text-[10px] text-slate-500 font-semibold leading-tight mt-0.5">${b.desc}</div>
+                    <span class="mt-2 text-[10px] font-black px-2 py-0.5 rounded-full ${
+                        unlocked ? 'bg-amber-400 text-brand-charcoal' : 'bg-slate-300 text-slate-600'
+                    }">
+                        ${unlocked ? 'TERBUKA' : 'BELUM TERBUKA'}
+                    </span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        /* ==========================================================================
+           LEVEL SELECTION MENU
+           ========================================================================== */
+        function renderAssessmentsPage() {
+            const grid = document.getElementById('assessment-cards-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const completedCount = state.stageScores.filter(s => s !== null).length;
+            const progressTextEl = document.getElementById('assessment-progress-text');
+            if (progressTextEl) progressTextEl.innerText = `${completedCount}/6 Selesai`;
+
+            MODULES_DATA.forEach((mod, idx) => {
+                const isCompleted = state.stageScores[idx] !== null;
+                const score = state.stageScores[idx];
+                const isUnlocked = (idx === 0) || (state.stageScores[idx - 1] !== null);
+
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-3xl border-4 p-6 flex flex-col justify-between shadow-sm arcade-card ${
+                    !isUnlocked 
+                    ? 'border-slate-200 bg-slate-50 opacity-70' 
+                    : isCompleted 
+                        ? 'border-emerald-300 bg-teal-50/20' 
+                        : 'border-slate-100 hover:border-brand-orange'
+                }`;
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black ${isUnlocked ? 'bg-amber-100 text-brand-charcoal' : 'bg-slate-200 text-slate-500'} px-3 py-1 rounded-full uppercase tracking-wider">${mod.levelTag}</span>
+                            ${isCompleted 
+                                ? `<span class="inline-flex items-center text-xs font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">⭐ ${score} PTS</span>`
+                                : `<span class="text-xs font-bold text-slate-400">Maks. 100 poin</span>`
+                            }
+                        </div>
+                        <h3 class="font-bold text-brand-charcoal text-base leading-snug">${mod.title}</h3>
+                        <p class="text-xs text-slate-500 font-semibold leading-relaxed">${mod.desc}</p>
+                    </div>
+
+                    <div class="pt-6 mt-4 border-t-2 border-slate-100 flex items-center justify-end">
+                        <button ${(!isUnlocked || isCompleted) ? 'disabled' : ''} onclick="startStageQuiz(${idx})" class="px-6 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-md transition ${
+                            isCompleted 
+                            ? 'bg-emerald-600 opacity-90 cursor-not-allowed' 
+                            : !isUnlocked 
+                                ? 'bg-slate-300 cursor-not-allowed' 
+                                : 'bg-brand-orange hover:bg-brand-orangeHover arcade-btn'
+                        }">
+                            ${isCompleted ? 'SELESAI' : isUnlocked ? 'MULAI LEVEL' : 'BELUM TERBUKA'}
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            const allStagesDone = completedCount === 6;
+            const evalDone = state.evalScore !== null || state.isAssessmentLocked;
+
+            const evalCard = document.createElement('div');
+            evalCard.className = `bg-white rounded-3xl p-6 flex flex-col justify-between shadow-md md:col-span-2 lg:col-span-3 border-4 ${
+                evalDone ? 'border-emerald-400' : allStagesDone ? 'border-brand-orange' : 'border-slate-200 opacity-80'
+            } relative overflow-hidden`;
+
+            evalCard.innerHTML = `
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div class="space-y-2 max-w-xl">
+                        <div class="inline-flex items-center space-x-2 bg-amber-100 text-brand-charcoal text-xs font-black px-3.5 py-1 rounded-full uppercase tracking-wider border border-amber-300">
+                            <span>👑 EVALUASI AKHIR</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-brand-charcoal">Evaluasi Materi Lingkaran</h3>
+                        <p class="text-xs sm:text-sm text-slate-600 font-semibold">
+                            ${evalDone 
+                                ? 'Status Asesmen: SELESAI. Seluruh jawaban dan skor telah dikunci secara permanen.' 
+                                : 'Saatnya menguji pemahamanmu! Kerjakan 3 soal pilihan ganda untuk mengetahui hasil belajarmu (hanya 1 kali kesempatan).'}
+                        </p>
+                    </div>
+
+                    <div class="shrink-0 flex flex-col items-end justify-center space-y-2">
+                        ${evalDone 
+                            ? `<div class="bg-amber-50 px-5 py-2.5 rounded-2xl border-2 border-amber-300 text-right">
+                                 <span class="block text-xs font-bold text-slate-500">Skor Evaluasi Akhir (Terkunci):</span>
+                                 <span class="text-2xl font-black text-brand-orange">${state.evalScore} / 100</span>
+                               </div>
+                               <button onclick="navigateTo('results')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-7 py-3.5 rounded-2xl text-sm shadow-md transition arcade-btn">
+                                 LIHAT HASIL & PEMBAHASAN
+                               </button>`
+                            : allStagesDone 
+                                ? `<button onclick="startEvaluationQuiz()" class="bg-brand-orange hover:bg-brand-orangeHover text-white font-bold px-7 py-3.5 rounded-2xl text-sm shadow-md transition arcade-btn">
+                                     MULAI EVALUASI AKHIR
+                                   </button>`
+                                : `<div class="bg-brand-slateBg border-2 border-slate-200 text-slate-500 font-bold text-xs px-4 py-3 rounded-2xl text-center">
+                                     🔒 Selesaikan 6 level untuk membuka Evaluasi Akhir!
+                                   </div>`
+                        }
+                    </div>
+                </div>
+            `;
+            grid.appendChild(evalCard);
+        }
+
+        /* ==========================================================================
+           QUIZ ENGINE
+           ========================================================================== */
+        let selectedMcqOption = null;
+
+        function startStageQuiz(moduleIndex, resumeQuestionIndex = 0, existingAnswers = []) {
+            // Block re-attempt if level is already completed or assessment is locked
+            if (state.stageScores[moduleIndex] !== null || state.isAssessmentLocked) {
+                navigateTo('assessments');
+                return;
+            }
+
+            state.currentQuizType = 'stage';
+            state.currentModuleIndex = moduleIndex;
+            state.currentQuestionIndex = resumeQuestionIndex;
+            state.userAnswers = existingAnswers;
+            saveStorage();
+
+            navigateTo('quiz');
+            renderQuizQuestion();
+        }
+
+        function startEvaluationQuiz(resumeQuestionIndex = 0, existingAnswers = []) {
+            // Block re-attempt if evaluation is already completed or locked
+            if (state.evalScore !== null || state.isAssessmentLocked) {
+                navigateTo('results');
+                return;
+            }
+
+            state.currentQuizType = 'evaluation';
+            state.currentModuleIndex = null;
+            state.currentQuestionIndex = resumeQuestionIndex;
+            state.userAnswers = existingAnswers;
+            saveStorage();
+
+            navigateTo('quiz');
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            selectedMcqOption = null;
+            const feedbackPanel = document.getElementById('quiz-feedback-panel');
+            if (feedbackPanel) feedbackPanel.classList.add('hidden');
+
+            const submitBtn = document.getElementById('quiz-submit-btn');
+            if (submitBtn) {
+                submitBtn.classList.remove('hidden');
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            if (state.currentQuizType === 'stage') {
+                const mod = MODULES_DATA[state.currentModuleIndex];
+                const q = mod.questions[state.currentQuestionIndex];
+
+                document.getElementById('quiz-module-tag').innerText = mod.levelTag;
+                document.getElementById('quiz-module-title').innerText = mod.title;
+                document.getElementById('quiz-question-counter').innerText = `Soal ${state.currentQuestionIndex + 1} / ${mod.questions.length}`;
+                document.getElementById('quiz-points-indicator').innerText = `⭐ +50 PTS`;
+
+                document.getElementById('quiz-question-text').innerHTML = q.text;
+
+                renderQuestionDiagram(state.currentModuleIndex, state.currentQuestionIndex);
+                renderMcqOptions(q.options);
+                document.getElementById('quiz-mcq-options').classList.remove('hidden');
+                document.getElementById('quiz-essay-container').classList.add('hidden');
+
+            } else {
+                const q = FINAL_EVALUATION_DATA.questions[state.currentQuestionIndex];
+                document.getElementById('quiz-module-tag').innerText = `EVALUASI AKHIR`;
+                document.getElementById('quiz-module-title').innerText = `Evaluasi Materi Sudut Pusat dan Sudut Keliling`;
+                document.getElementById('quiz-question-counter').innerText = `Soal ${state.currentQuestionIndex + 1} / ${FINAL_EVALUATION_DATA.questions.length}`;
+                document.getElementById('quiz-points-indicator').innerText = `⭐ +${q.points} PTS`;
+
+                document.getElementById('quiz-question-text').innerHTML = q.text;
+                document.getElementById('quiz-diagram-container').classList.add('hidden');
+
+                document.getElementById('quiz-mcq-options').classList.remove('hidden');
+                document.getElementById('quiz-essay-container').classList.add('hidden');
+                renderMcqOptions(q.options);
+            }
+        }
+
+        function renderMcqOptions(options) {
+            const container = document.getElementById('quiz-mcq-options');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const labels = ['A', 'B', 'C', 'D'];
+            options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `mcq-option-btn w-full p-4 rounded-2xl border-2 border-brand-lightGray bg-white text-left flex items-start space-x-3 transition hover:border-brand-orange/60 hover:bg-orange-50/30`;
+                btn.onclick = () => selectMcqOption(idx);
+
+                btn.innerHTML = `
+                    <div class="mcq-badge w-7 h-7 rounded-xl bg-brand-slateBg border-2 border-brand-lightGray text-brand-charcoal font-bold text-xs flex items-center justify-center shrink-0 transition">
+                        ${labels[idx]}
+                    </div>
+                    <div class="mcq-text text-xs sm:text-sm text-brand-charcoal font-normal leading-relaxed pt-0.5">
+                        ${optText}
+                    </div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectMcqOption(optionIndex) {
+            const mcqContainer = document.getElementById('quiz-mcq-options');
+            if (mcqContainer && mcqContainer.classList.contains('pointer-events-none')) return;
+
+            selectedMcqOption = parseInt(optionIndex, 10);
+
+            const allBtns = document.querySelectorAll('.mcq-option-btn');
+            allBtns.forEach((btn, idx) => {
+                const badge = btn.querySelector('.mcq-badge');
+                if (idx === selectedMcqOption) {
+                    btn.className = `mcq-option-btn w-full p-4 rounded-2xl border-2 border-brand-orange bg-orange-50/60 text-left flex items-start space-x-3 transition shadow-sm`;
+                    if (badge) badge.className = `mcq-badge w-7 h-7 rounded-xl bg-brand-orange text-white font-bold text-xs flex items-center justify-center shrink-0 transition`;
+                } else {
+                    btn.className = `mcq-option-btn w-full p-4 rounded-2xl border-2 border-brand-lightGray bg-white text-left flex items-start space-x-3 transition hover:border-brand-orange/60 hover:bg-orange-50/30`;
+                    if (badge) badge.className = `mcq-badge w-7 h-7 rounded-xl bg-brand-slateBg border-2 border-brand-lightGray text-brand-charcoal font-bold text-xs flex items-center justify-center shrink-0 transition`;
+                }
+            });
+
+            const submitBtn = document.getElementById('quiz-submit-btn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function submitCurrentQuestion() {
+            if (selectedMcqOption === null || selectedMcqOption === undefined) {
+                alert("Pilih salah satu jawaban terlebih dahulu, ya!");
+                return;
+            }
+
+            const mcqOpts = document.getElementById('quiz-mcq-options');
+            if (mcqOpts) mcqOpts.classList.add('pointer-events-none', 'opacity-90');
+
+            if (state.currentQuizType === 'stage') {
+                const mod = MODULES_DATA[state.currentModuleIndex];
+                const q = mod.questions[state.currentQuestionIndex];
+                state.userAnswers[state.currentQuestionIndex] = selectedMcqOption;
+                saveStorage();
+
+                const isCorrect = (parseInt(selectedMcqOption, 10) === parseInt(q.correctIndex, 10));
+                showStageFeedback(isCorrect, q.correctIndex, q.explanation);
+            } else {
+                const q = FINAL_EVALUATION_DATA.questions[state.currentQuestionIndex];
+                state.userAnswers[state.currentQuestionIndex] = selectedMcqOption;
+                saveStorage();
+
+                const isCorrect = (parseInt(selectedMcqOption, 10) === parseInt(q.correctIndex, 10));
+                showStageFeedback(isCorrect, q.correctIndex, q.explanation);
+            }
+        }
+
+        function renderQuestionDiagram(modIdx, qIdx) {
+            const container = document.getElementById('quiz-diagram-container');
+            if (!container) return;
+            let svgContent = '';
+
+            if (modIdx === 1 && qIdx === 0) {
+                svgContent = `
+                    <svg viewBox="0 0 220 220" class="w-48 h-48">
+                        <circle cx="110" cy="110" r="80" stroke="#34313A" stroke-width="3" fill="#FFFDF8"/>
+                        <circle cx="110" cy="110" r="5" fill="#F26B38"/>
+                        <text x="110" y="98" text-anchor="middle" font-size="12" font-weight="900" fill="#34313A">O</text>
+                        <line x1="50" y1="160" x2="170" y2="160" stroke="#34313A" stroke-width="3"/>
+                        <circle cx="50" cy="160" r="4" fill="#34313A"/>
+                        <text x="38" y="165" font-size="12" font-weight="900" fill="#34313A">A</text>
+                        <circle cx="170" cy="160" r="4" fill="#34313A"/>
+                        <text x="182" y="165" font-size="12" font-weight="900" fill="#34313A">B</text>
+                        <line x1="110" y1="110" x2="110" y2="160" stroke="#F26B38" stroke-width="2.5" stroke-dasharray="4"/>
+                        <circle cx="110" cy="160" r="4" fill="#F26B38"/>
+                        <text x="110" y="176" text-anchor="middle" font-size="11" font-weight="900" fill="#F26B38">M (5 cm)</text>
+                        <line x1="110" y1="110" x2="50" y2="160" stroke="#F6C445" stroke-width="2.5"/>
+                        <text x="72" y="130" font-size="12" font-weight="900" fill="#34313A">r</text>
+                    </svg>
+                `;
+            } 
+            else if (modIdx === 4 && qIdx === 1) {
+                svgContent = `
+                    <svg viewBox="0 0 220 220" class="w-48 h-48">
+                        <circle cx="110" cy="110" r="80" stroke="#34313A" stroke-width="3" fill="none"/>
+                        <line x1="30" y1="110" x2="190" y2="110" stroke="#34313A" stroke-width="3"/>
+                        <circle cx="110" cy="110" r="4" fill="#F26B38"/>
+                        <text x="110" y="126" text-anchor="middle" font-size="12" font-weight="900" fill="#34313A">O</text>
+                        <polygon points="30,110 190,110 140,36" fill="rgba(242, 107, 56, 0.12)" stroke="#F26B38" stroke-width="3"/>
+                        <text x="18" y="115" font-size="12" font-weight="900" fill="#34313A">A</text>
+                        <text x="200" y="115" font-size="12" font-weight="900" fill="#34313A">C</text>
+                        <text x="145" y="28" font-size="12" font-weight="900" fill="#F26B38">B (90°)</text>
+                    </svg>
+                `;
+            }
+            else if (modIdx === 5) {
+                svgContent = `
+                    <svg viewBox="0 0 220 220" class="w-48 h-48">
+                        <circle cx="110" cy="110" r="80" stroke="#34313A" stroke-width="3" fill="none"/>
+                        <circle cx="110" cy="110" r="4" fill="#34313A"/>
+                        <text x="98" y="120" font-size="12" font-weight="900" fill="#34313A">O</text>
+                        <line x1="110" y1="110" x2="60" y2="172" stroke="#F6C445" stroke-width="3"/>
+                        <line x1="110" y1="110" x2="160" y2="172" stroke="#F6C445" stroke-width="3"/>
+                        <text x="48" y="186" font-size="12" font-weight="900" fill="#34313A">A</text>
+                        <text x="168" y="186" font-size="12" font-weight="900" fill="#34313A">B</text>
+                        <line x1="110" y1="30" x2="60" y2="172" stroke="#F26B38" stroke-width="3"/>
+                        <line x1="110" y1="30" x2="160" y2="172" stroke="#F26B38" stroke-width="3"/>
+                        <circle cx="110" cy="30" r="4" fill="#F26B38"/>
+                        <text x="110" y="20" text-anchor="middle" font-size="12" font-weight="900" fill="#F26B38">C</text>
+                    </svg>
+                `;
+            }
+
+            if (svgContent) {
+                container.innerHTML = svgContent;
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        /* ==========================================================================
+           PROFILE POPUP CONTROLLER
+           ========================================================================== */
+        function toggleProfilePopup(event) {
+            if (event) event.stopPropagation();
+            const popup = document.getElementById('profile-popup');
+            if (popup) {
+                if (popup.classList.contains('hidden')) {
+                    updateProfilePopupData();
+                    popup.classList.remove('hidden');
+                } else {
+                    popup.classList.add('hidden');
+                }
+            }
+        }
+
+        function updateProfilePopupData() {
+            const nameEl = document.getElementById('popup-user-name');
+            const classEl = document.getElementById('popup-user-class');
+            const schoolEl = document.getElementById('popup-user-school');
+            const pointsEl = document.getElementById('popup-user-points');
+            const progEl = document.getElementById('popup-user-progress');
+            const pctEl = document.getElementById('popup-user-pct');
+            const barEl = document.getElementById('popup-user-progress-bar');
+
+            if (nameEl) nameEl.innerText = state.user.name || '-';
+            if (classEl) classEl.innerText = state.user.class || '-';
+            if (schoolEl) schoolEl.innerText = state.user.school || '-';
+            
+            const totalPts = calculateTotalPoints();
+            if (pointsEl) pointsEl.innerText = `${totalPts} PTS`;
+
+            const completedCount = state.stageScores.filter(s => s !== null).length;
+            const pct = Math.round((completedCount / 6) * 100);
+            
+            if (progEl) progEl.innerText = `${completedCount} / 6 Level Selesai`;
+            if (pctEl) pctEl.innerText = `${pct}%`;
+            if (barEl) barEl.style.width = `${pct}%`;
+        }
+
+        document.addEventListener('click', function(e) {
+            const popup = document.getElementById('profile-popup');
+            if (popup && !popup.classList.contains('hidden')) {
+                if (!popup.contains(e.target)) {
+                    popup.classList.add('hidden');
+                }
+            }
+        });
+
+        /* ==========================================================================
+           FEEDBACK PANEL
+           ========================================================================== */
+        function showStageFeedback(isCorrect, correctIndex, explanationText) {
+            const submitBtn = document.getElementById('quiz-submit-btn');
+            if (submitBtn) submitBtn.classList.add('hidden');
+
+            const feedbackPanel = document.getElementById('quiz-feedback-panel');
+            const feedbackHeader = document.getElementById('feedback-header');
+            const feedbackExplanation = document.getElementById('feedback-explanation');
+            const nextBtn = document.getElementById('feedback-next-btn');
+
+            if (feedbackPanel) feedbackPanel.classList.remove('hidden');
+
+            const keys = ['A', 'B', 'C', 'D'];
+            const keyText = (correctIndex !== null && correctIndex !== undefined) ? ` (Kunci Jawaban: ${keys[correctIndex]})` : '';
+
+            if (isCorrect) {
+                if (feedbackHeader) {
+                    feedbackHeader.className = "flex items-center space-x-3 p-4 rounded-2xl text-sm font-black bg-amber-50 text-brand-charcoal border-2 border-amber-300";
+                    feedbackHeader.innerHTML = `
+                        <span class="text-2xl">✔</span>
+                        <div>
+                            <div class="text-base font-extrabold text-brand-orange">Hebat! Jawabanmu benar!</div>
+                            <div class="text-xs font-bold text-brand-charcoal text-opacity-80">+50 poin${keyText}</div>
+                        </div>
+                    `;
+                }
+            } else {
+                if (feedbackHeader) {
+                    feedbackHeader.className = "flex items-center space-x-3 p-4 rounded-2xl text-sm font-black bg-orange-50 text-brand-charcoal border-2 border-orange-300";
+                    feedbackHeader.innerHTML = `
+                        <span class="text-2xl text-rose-600">✖</span>
+                        <div>
+                            <div class="text-base font-extrabold text-rose-600">Belum tepat! Yuk, pelajari pembahasannya.</div>
+                            <div class="text-xs font-bold text-brand-charcoal text-opacity-80">0 poin${keyText}</div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (feedbackExplanation) feedbackExplanation.innerHTML = explanationText;
+
+            if (nextBtn) {
+                if (state.currentQuizType === 'stage') {
+                    const mod = MODULES_DATA[state.currentModuleIndex];
+                    if (state.currentQuestionIndex === mod.questions.length - 1) {
+                        nextBtn.innerText = "LIHAT HASIL LEVEL";
+                    } else {
+                        nextBtn.innerText = "SOAL BERIKUTNYA";
+                    }
+                } else {
+                    if (state.currentQuestionIndex === FINAL_EVALUATION_DATA.questions.length - 1) {
+                        nextBtn.innerText = "KIRIM EVALUASI AKHIR";
+                    } else {
+                        nextBtn.innerText = "SOAL BERIKUTNYA";
+                    }
+                }
+            }
+
+            const mcqOpts = document.getElementById('quiz-mcq-options');
+            if (mcqOpts) mcqOpts.classList.remove('pointer-events-none', 'opacity-90');
+        }
+
+        function nextQuestionOrFinish() {
+            if (state.currentQuizType === 'stage') {
+                const mod = MODULES_DATA[state.currentModuleIndex];
+                if (state.currentQuestionIndex < mod.questions.length - 1) {
+                    state.currentQuestionIndex++;
+                    saveStorage();
+                    renderQuizQuestion();
+                } else {
+                    let correctCount = 0;
+                    mod.questions.forEach((q, idx) => {
+                        if (state.userAnswers[idx] === q.correctIndex) {
+                            correctCount++;
+                        }
+                    });
+                    const score = correctCount * 50;
+                    
+                    // Lock score only once
+                    if (state.stageScores[state.currentModuleIndex] === null) {
+                        state.stageScores[state.currentModuleIndex] = score;
+                        state.stageAnswers[state.currentModuleIndex] = [...state.userAnswers];
+                    }
+                    
+                    state.currentQuizType = null;
+                    saveStorage();
+                    
+                    showLevelClearModal(mod.levelTag, mod.title, correctCount, mod.questions.length - correctCount, score);
+                }
+            } else {
+                if (state.currentQuestionIndex < FINAL_EVALUATION_DATA.questions.length - 1) {
+                    state.currentQuestionIndex++;
+                    saveStorage();
+                    renderQuizQuestion();
+                } else {
+                    evaluateFinalExam();
+                    navigateTo('results');
+                    triggerVictoryConfetti();
+                }
+            }
+        }
+
+        function showLevelClearModal(levelTag, title, correctCount, wrongCount, score) {
+            document.getElementById('level-clear-subtitle').innerText = `${levelTag} SELESAI!`;
+            document.getElementById('level-clear-title').innerText = title;
+            document.getElementById('level-clear-correct-count').innerText = `${correctCount} / 2`;
+            document.getElementById('level-clear-wrong-count').innerText = `${wrongCount} / 2`;
+            document.getElementById('level-clear-score').innerText = `${score} / 100`;
+
+            const nextBtn = document.getElementById('level-clear-next-btn');
+            if (nextBtn) {
+                if (state.currentModuleIndex < MODULES_DATA.length - 1) {
+                    nextBtn.innerText = "LANJUT KE LEVEL BERIKUTNYA";
+                } else {
+                    nextBtn.innerText = "LANJUT KE EVALUASI AKHIR";
+                }
+            }
+
+            navigateTo('level-clear');
+        }
+
+        function nextLevelOrSelect() {
+            if (state.currentModuleIndex < MODULES_DATA.length - 1) {
+                startStageQuiz(state.currentModuleIndex + 1);
+            } else {
+                navigateTo('assessments');
+            }
+        }
+
+        /* ==========================================================================
+           EVALUATION GRADING ENGINE
+           ========================================================================== */
+        function evaluateFinalExam() {
+            let totalEvalScore = 0;
+            const details = [];
+
+            FINAL_EVALUATION_DATA.questions.forEach((q, idx) => {
+                const userAns = state.userAnswers[idx];
+                let itemScore = 0;
+                let userSummary = "";
+
+                const isCorrect = (userAns === q.correctIndex);
+                itemScore = isCorrect ? q.points : 0;
+                userSummary = `Pilihan Anda: <b>${String.fromCharCode(65 + userAns)}</b> (${q.options[userAns]})`;
+
+                totalEvalScore += itemScore;
+                details.push({
+                    questionIndex: idx + 1,
+                    questionText: q.text,
+                    score: itemScore,
+                    maxScore: q.points,
+                    userSummary: userSummary,
+                    explanation: q.explanation
+                });
+            });
+
+            // Lock entire assessment permanently upon completion
+            state.evalScore = totalEvalScore;
+            state.evalDetails = details;
+            state.isAssessmentLocked = true;
+            state.currentQuizType = null;
+            saveStorage();
+        }
+
+        /* ==========================================================================
+           COMPREHENSIVE RESULTS & REKAP SCREEN (6 LEVELS + EVALUATION)
+           ========================================================================== */
+        function renderResultsPage() {
+            const nameEl = document.getElementById('result-student-name');
+            const metaEl = document.getElementById('result-student-meta');
+            if (nameEl) nameEl.innerText = state.user.name || 'Peserta Didik';
+            if (metaEl) metaEl.innerText = `Kelas: ${state.user.class || '-'} • ${state.user.school || '-'}`;
+
+            const validScores = state.stageScores.filter(s => s !== null);
+            const totalStagePts = validScores.reduce((a, b) => a + b, 0);
+            const avgStage = validScores.length > 0 ? Math.round(totalStagePts / validScores.length) : 0;
+
+            const avgEl = document.getElementById('result-avg-stage-score');
+            const evalEl = document.getElementById('result-eval-score');
+            if (avgEl) avgEl.innerText = avgStage;
+            if (evalEl) evalEl.innerText = state.evalScore !== null ? state.evalScore : 0;
+
+            const feedbackTitle = document.getElementById('result-feedback-title');
+            const feedbackBody = document.getElementById('result-feedback-body');
+            if (feedbackTitle && feedbackBody) {
+                const finalAvg = Math.round((avgStage + (state.evalScore || 0)) / 2);
+                if (finalAvg >= 85) {
+                    feedbackTitle.innerText = "SANGAT BAIK! Penguasaan Luar Biasa 🌟";
+                    feedbackBody.innerText = "Selamat! Anda telah menuntaskan seluruh 6 level materi dan Evaluasi Akhir dengan sangat baik.";
+                } else if (finalAvg >= 70) {
+                    feedbackTitle.innerText = "BAGUS! Penguasaan Cukup Matang 👍";
+                    feedbackBody.innerText = "Hasil yang bagus! Rekapitulasi nilai mencakup keseluruhan 6 level dan evaluasi akhir telah tersimpan dengan baik.";
+                } else {
+                    feedbackTitle.innerText = "TETAP SEMANGAT! Pelajari Kembali Konsep Dasar 💪";
+                    feedbackBody.innerText = "Hasil pengerjaan 6 level dan evaluasi akhir telah terangkum. Pelajari kembali pembahasan di bawah ini untuk meningkatkan penguasaan materi.";
+                }
+            }
+
+            renderBadgesDisplay('results-unlocked-badges');
+
+            // Rincian Skor & Pembahasan Lengkap Seluruh 6 Level Materi
+            const breakdownContainer = document.getElementById('result-module-breakdown');
+            if (breakdownContainer) {
+                breakdownContainer.innerHTML = '';
+                MODULES_DATA.forEach((mod, idx) => {
+                    const sc = state.stageScores[idx] !== null ? state.stageScores[idx] : 0;
+                    const isDone = state.stageScores[idx] !== null;
+                    const savedAnswers = state.stageAnswers[idx] || [];
+
+                    let questionsHTML = '';
+                    if (isDone) {
+                        questionsHTML = mod.questions.map((q, qIdx) => {
+                            const userAnsIdx = savedAnswers[qIdx];
+                            const hasAns = userAnsIdx !== undefined && userAnsIdx !== null;
+                            const isCorrect = hasAns && (parseInt(userAnsIdx, 10) === parseInt(q.correctIndex, 10));
+                            const userChoiceLabel = hasAns ? `${String.fromCharCode(65 + userAnsIdx)} (${q.options[userAnsIdx]})` : 'Tidak dijawab';
+
+                            return `
+                                <div class="mt-3 p-4 rounded-xl bg-white border-2 border-brand-lightGray space-y-2.5">
+                                    <div class="flex items-center justify-between border-b border-brand-lightGray pb-2">
+                                        <span class="text-xs font-extrabold text-brand-charcoal">Soal ${qIdx + 1}</span>
+                                        <span class="text-[11px] font-black px-2.5 py-0.5 rounded-full ${isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'}">
+                                            ${isCorrect ? '✔ Benar (+50 PTS)' : '✖ Salah (0 PTS)'}
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-brand-charcoal leading-relaxed font-normal">${q.text}</div>
+                                    <div class="text-xs font-bold ${isCorrect ? 'text-emerald-700' : 'text-rose-600'} bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                                        Pilihan Anda: ${userChoiceLabel}
+                                    </div>
+                                    <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200 text-xs text-brand-charcoal leading-relaxed font-normal">
+                                        <span class="font-extrabold text-brand-orange block mb-1 uppercase tracking-wider text-[11px]">Pembahasan Matematis:</span>
+                                        ${q.explanation}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        questionsHTML = `<p class="text-xs text-brand-grayText italic mt-2">Level ini belum dikerjakan sehingga pembahasan belum tersedia.</p>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = "bg-brand-slateBg p-5 rounded-2xl border-2 border-brand-lightGray space-y-2";
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between border-b-2 border-brand-lightGray pb-3">
+                            <div>
+                                <span class="text-xs font-black text-brand-orange block uppercase">${mod.levelTag}</span>
+                                <h4 class="text-sm sm:text-base font-bold text-brand-charcoal">${mod.title}</h4>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-base font-black ${isDone ? (sc >= 100 ? 'text-emerald-700 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-full' : 'text-brand-orange bg-orange-100 border border-orange-200 px-3 py-1 rounded-full') : 'text-slate-400'}">
+                                    ${isDone ? `${sc} / 100 PTS` : 'Belum Selesai'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="space-y-3 pt-1">
+                            ${questionsHTML}
+                        </div>
+                    `;
+                    breakdownContainer.appendChild(card);
+                });
+            }
+
+            const evalReviewList = document.getElementById('result-eval-review-list');
+            if (evalReviewList) {
+                evalReviewList.innerHTML = '';
+                if (state.evalDetails && state.evalDetails.length > 0) {
+                    state.evalDetails.forEach((item) => {
+                        const box = document.createElement('div');
+                        box.className = "p-5 rounded-2xl border-2 border-brand-lightGray bg-brand-slateBg space-y-3";
+                        box.innerHTML = `
+                            <div class="flex items-center justify-between border-b-2 border-brand-lightGray pb-2">
+                                <span class="text-xs font-black text-brand-charcoal">SOAL EVALUASI ${item.questionIndex}</span>
+                                <span class="text-xs font-black px-3 py-1 rounded-full ${item.score === item.maxScore ? 'bg-amber-100 text-brand-charcoal border border-amber-300' : 'bg-orange-100 text-brand-orange border border-orange-200'}">
+                                    Skor: ${item.score} / ${item.maxScore}
+                                </span>
+                            </div>
+                            <div class="text-xs text-brand-grayText leading-relaxed font-bold">${item.userSummary}</div>
+                            <div class="bg-white p-4 rounded-xl border-2 border-brand-lightGray text-xs text-brand-charcoal leading-relaxed font-bold">
+                                ${item.explanation}
+                            </div>
+                        `;
+                        evalReviewList.appendChild(box);
+                    });
+                } else {
+                    evalReviewList.innerHTML = `<p class="text-xs text-brand-grayText italic font-bold">Evaluasi akhir belum dikerjakan.</p>`;
+                }
+            }
+        }
+
+        function triggerVictoryConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        window.onload = function () {
+            initStorage();
+            if (!state.isRegistered) {
+                navigateTo('identity');
+            } else if (state.currentQuizType && !state.isAssessmentLocked) {
+                if (state.currentQuizType === 'stage') {
+                    startStageQuiz(state.currentModuleIndex, state.currentQuestionIndex, state.userAnswers);
+                } else {
+                    startEvaluationQuiz(state.currentQuestionIndex, state.userAnswers);
+                }
+            } else {
+                navigateTo('home');
+            }
+        };
+    </script>
+</body>
+</html>

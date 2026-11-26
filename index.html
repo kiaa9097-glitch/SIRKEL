@@ -485,16 +485,10 @@
                         <p class="text-brand-grayText font-bold text-xs sm:text-sm" id="result-student-meta">Kelas XI • SMAN 3 Garut</p>
                     </div>
 
-                    <div class="flex items-center space-x-4 bg-brand-slateBg p-4 rounded-2xl border-2 border-brand-lightGray">
+                    <div class="flex items-center justify-center bg-brand-slateBg px-6 py-4 rounded-2xl border-2 border-brand-lightGray">
                         <div class="text-center px-3">
-                            <span class="block text-xs text-brand-grayText font-bold uppercase">Rata-Rata 6 Level</span>
-                            <span id="result-avg-stage-score" class="text-3xl font-bold text-brand-orange">0</span>
-                            <span class="text-xs text-brand-grayText font-bold">/ 100</span>
-                        </div>
-                        <div class="h-10 w-0.5 bg-brand-lightGray"></div>
-                        <div class="text-center px-3">
-                            <span class="block text-xs text-brand-grayText font-bold uppercase">Evaluasi Akhir</span>
-                            <span id="result-eval-score" class="text-3xl font-bold text-brand-orange">0</span>
+                            <span class="block text-xs text-brand-grayText font-bold uppercase tracking-wider">NILAI AKHIR</span>
+                            <span id="result-final-score" class="text-4xl font-extrabold text-brand-orange">0</span>
                             <span class="text-xs text-brand-grayText font-bold">/ 100</span>
                         </div>
                     </div>
@@ -1576,21 +1570,22 @@
 
             const validScores = state.stageScores.filter(s => s !== null);
             const totalStagePts = validScores.reduce((a, b) => a + b, 0);
-            const avgStage = validScores.length > 0 ? Math.round(totalStagePts / validScores.length) : 0;
+            const avgStage = validScores.length > 0 ? (totalStagePts / validScores.length) : 0;
+            const evalVal = state.evalScore !== null ? state.evalScore : 0;
 
-            const avgEl = document.getElementById('result-avg-stage-score');
-            const evalEl = document.getElementById('result-eval-score');
-            if (avgEl) avgEl.innerText = avgStage;
-            if (evalEl) evalEl.innerText = state.evalScore !== null ? state.evalScore : 0;
+            // Rumus Nilai Akhir = (80% × Rata-rata Enam Level) + (20% × Evaluasi Akhir)
+            const finalScore = Math.round((0.8 * avgStage) + (0.2 * evalVal));
+
+            const finalScoreEl = document.getElementById('result-final-score');
+            if (finalScoreEl) finalScoreEl.innerText = finalScore;
 
             const feedbackTitle = document.getElementById('result-feedback-title');
             const feedbackBody = document.getElementById('result-feedback-body');
             if (feedbackTitle && feedbackBody) {
-                const finalAvg = Math.round((avgStage + (state.evalScore || 0)) / 2);
-                if (finalAvg >= 85) {
+                if (finalScore >= 85) {
                     feedbackTitle.innerText = "SANGAT BAIK! Penguasaan Luar Biasa 🌟";
                     feedbackBody.innerText = "Selamat! Anda telah menuntaskan seluruh 6 level materi dan Evaluasi Akhir dengan sangat baik.";
-                } else if (finalAvg >= 70) {
+                } else if (finalScore >= 70) {
                     feedbackTitle.innerText = "BAGUS! Penguasaan Cukup Matang 👍";
                     feedbackBody.innerText = "Hasil yang bagus! Rekapitulasi nilai mencakup keseluruhan 6 level dan evaluasi akhir telah tersimpan dengan baik.";
                 } else {
